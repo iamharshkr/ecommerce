@@ -28,7 +28,18 @@ def login(request):
             return Response({'status': False, 'error': 'Invalid credentials'}, status=401)
     except Exception as e:
         return Response({'status': False, 'error': str(e)}, status=500)
+    
 
+#logout
+@api_view(['POST'])
+def logout(request):
+    try:
+        response = Response({'status': True, "data": "Successfully logged out"})
+        response.delete_cookie('refresh_token')
+        response.delete_cookie('access_token')
+        return response
+    except Exception as e:
+        return Response({'status': False, 'error': str(e)}, status=500)
 
 @api_view(['POST'])
 def register(request):
