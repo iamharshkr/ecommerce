@@ -21,8 +21,8 @@ def login(request):
             refresh = RefreshToken.for_user(user)
             serializer = UserSerializer(user)
             response = Response({'status': True, 'user':serializer.data})
-            response.set_cookie('refresh_token', str(refresh), httponly=True)
-            response.set_cookie('access_token', str(refresh.access_token), httponly=True)
+            response.set_cookie('refresh_token', str(refresh))
+            response.set_cookie('access_token', str(refresh.access_token))
             return response
         else:
             return Response({'status': False, 'error': 'Invalid credentials'}, status=401)
@@ -61,8 +61,10 @@ def register(request):
             return Response({'status': False, 'error': 'Something went wrong!'}, status=403)
     except Exception as e:
         return Response({'status': False, 'error': str(e)}, status=500)
-    
+
 @api_view(['GET', 'POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])  
 def products(request):
     try:
         if request.method == "POST":
@@ -74,9 +76,12 @@ def products(request):
             
         elif request.method == "GET":
             id = request.GET.get('id', None)
+            category = request.GET.get('category', None)
             products = Product.objects.all()
             if id is not None:
                 products = products.filter(id=id)
+            if category is not None:
+                products = products.filter(category=category)
             serializer = ProductSerializer(products, many=True)
             return Response({'status': True, 'data': serializer.data})
     except Exception as e:
@@ -93,12 +98,39 @@ def orders(request):
             order = OrderSerializer(data=request.data)
             if order.is_valid():
                 order.save()
-                serializer = OrderSerializer(order)
                 return Response({'status': True, 'data': "Order placed successfully"})
         elif request.method == "GET":
             user = request.user
             orders = Order.objects.filter(user=user)
             serializer = OrderSerializer(orders, many=True)
+            return Response({'status': True, 'data': serializer.data})
+    except Exception as e:
+        return Response({'status': False, 'error': str(e)}, status=500)
+    
+#cart view
+@api_view(['GET', 'POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def carts(request):
+    try:
+        if request.method == "POST":
+            # request.data._mutable = True
+            data = {}
+            data['user'] = request.user.id
+            data["cart_items"] = request.data["cart_items"]
+            cart = CartSerializer(data=data)
+            print(data['cart_items'])
+            if cart.is_valid():
+                cart.save()
+                return Response({'status': True, 'data': "Product addded to cart successfully"})
+            return Response({
+                "status": False,
+                "error": cart.errors
+            }, status=400)
+        elif request.method == "GET":
+            user = request.user
+            orders = Cart.objects.filter(user=user)
+            serializer = CartSerializer(orders, many=True)
             return Response({'status': True, 'data': serializer.data})
     except Exception as e:
         return Response({'status': False, 'error': str(e)}, status=500)

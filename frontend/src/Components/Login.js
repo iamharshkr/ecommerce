@@ -1,18 +1,34 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { userLogin } from "../actions/userActions";
+import { clearErrors, userLogin } from "../actions/userActions";
 import Loader from "./Loader";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const { loading, user, error } = useSelector((state) => state.user);
+  const { loading, user, error, is_authenticated } = useSelector(
+    (state) => state.user
+  );
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     dispatch(userLogin({ username, password }));
   };
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearErrors());
+    }
+    if (is_authenticated) {
+      toast.success("Login Successful");
+      navigate("/");
+    }
+  }, [error, is_authenticated]);
   return (
     <Fragment>
       {loading ? (
@@ -64,7 +80,6 @@ const Login = () => {
               </button>
             </form>
           </div>
-          {error && <div className="text-red-500 font-bold">{error}</div>}
           {user && <div>{JSON.stringify(user)}</div>}
         </div>
       )}

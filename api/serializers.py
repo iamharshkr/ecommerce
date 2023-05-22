@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Product, Order, Cart
+from .models import Product, Order, Cart, CartItem
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the users object"""
@@ -23,6 +23,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     """Serializer for the products object"""
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all())
 
     class Meta:
         model = Order
@@ -32,12 +34,26 @@ class OrderSerializer(serializers.ModelSerializer):
         return Order.objects.create(**validated_data)
     
 
+# cart_item
+class CartItemSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CartItem
+        fields = ['product', 'quantity']
+
+# cart
 class CartSerializer(serializers.ModelSerializer):
-    """Serializer for the products object"""
+    cart_items = CartItemSerializer(many=True)
 
     class Meta:
         model = Cart
         fields = '__all__'
 
     def create(self, validated_data):
-        return Cart.objects.create(**validated_data)
+        cart_items_data = validated_data.pop('cart_items')
+        cart = Cart.objects.create(user=validated_data['user'])
+        for cart_item_data in cart_items_data:
+            product = Product.objects.get(pk=cart_item_data['product'])
+            cart_item = CartItem.objects.create(cart=cart, product=product, **cart_item_data)
+            cart.cart_items.add(cart_item)
+        return cart

@@ -1,9 +1,12 @@
 import axios from "axios";
 import {
-    CLEAR_ERRORS,
+  CLEAR_ERRORS,
   FAIL_LOGIN,
+  FAIL_LOGOUT,
   REQUEST_LOGIN,
+  REQUEST_LOGOUT,
   SUCCESS_LOGIN,
+  SUCCESS_LOGOUT,
 } from "../constants/userConstants";
 
 export const userLogin = (userData) => async (dispatch) => {
@@ -20,6 +23,22 @@ export const userLogin = (userData) => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: FAIL_LOGIN,
+      payload: error.response.data.error,
+    });
+  }
+};
+
+export const userLogout = () => async (dispatch) => {
+  try {
+    dispatch({ type: REQUEST_LOGOUT });
+    const { data } = await axios.post("/api/logout/");
+    dispatch({
+      type: SUCCESS_LOGOUT,
+      payload: data.data,
+    });
+  } catch (error) {
+    dispatch({
+      type: FAIL_LOGOUT,
       payload: error.response.data.error,
     });
   }
